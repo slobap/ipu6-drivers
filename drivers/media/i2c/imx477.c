@@ -1105,11 +1105,12 @@ struct imx477 {
 	struct media_pad pad[NUM_PADS];
 
 	unsigned int fmt_code;
-
+	struct clk *img_clk;
 	struct clk *xclk;
 	u32 xclk_freq;
+	struct regulator *avdd;
 
-	struct gpio_desc *reset_gpio;
+	struct gpio_desc *reset;
 	struct regulator_bulk_data supplies[IMX477_NUM_SUPPLIES];
 
 	struct v4l2_ctrl_handler ctrl_handler;
@@ -1144,6 +1145,33 @@ struct imx477 {
 	const struct imx477_compatible_data *compatible_data;
 };
 
+static int imx477_get_pm_resources(struct device *dev)
+{
+	struct v4l2_subdev *sd = dev_get_drvdata(dev);
+	struct imx477 *i477 = to_imx477(sd);
+	int ret;
+
+	i477->reset = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_LOW);
+	if (IS_ERR(i477->reset))
+		return dev_err_probe(dev, PTR_ERR(i477->reset),
+				     "failed to get reset gpio\n");
+
+	i477->img_clk = devm_clk_get_optional(dev, NULL);
+	if (IS_ERR(i477->img_clk))
+		return dev_err_probe(dev, PTR_ERR(i477->img_clk),
+				     "failed to get imaging clock\n");
+
+	i477->avdd = devm_regulator_get_optional(dev, "avdd");
+	if (IS_ERR(i477->avdd)) {
+		ret = PTR_ERR(i477->avdd);
+		i477->avdd = NULL;
+		if (ret != -ENODEV)
+			return dev_err_probe(dev, ret,
+					     "failed to get avdd regulator\n");
+	}
+
+	return 0;
+}
 static inline struct imx477 *to_imx477(struct v4l2_subdev *_sd)
 {
 	return container_of(_sd, struct imx477, sd);
@@ -1863,18 +1891,27 @@ reg_off:
 	return ret;
 }
 
+// Treba proveriti !!!
 static int imx477_power_off(struct device *dev)
 {
-	struct i2c_client *client = to_i2c_client(dev);
-	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+	//struct i2c_client *client = to_i2c_client(dev);
+	//struct v4l2_subdev *sd = i2c_get_clientdata(client);
+	struct v4l2_subdev *sd = dev_get_drvdata(dev);
 	struct imx477 *imx477 = to_imx477(sd);
-
+/*
 	gpiod_set_value_cansleep(imx477->reset_gpio, 0);
 	regulator_bulk_disable(IMX477_NUM_SUPPLIES, imx477->supplies);
 	clk_disable_unprepare(imx477->xclk);
 
-	/* Force reprogramming of the common registers when powered up again. */
-	imx477->common_regs_written = false;
+	 Force reprogramming of the common registers when powered up again. */
+	//imx477->common_regs_written = false;
+	if (imx477->reset)
+		gpiod_set_value_cansleep(imx477->reset, 1);
+
+	if (imx477->avdd)
+		regulator_disable(imx477->avdd);
+
+	clk_disable_unprepare(imx477->img_clk);
 
 	return 0;
 }
