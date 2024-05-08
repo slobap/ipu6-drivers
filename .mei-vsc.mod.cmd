@@ -1,0 +1,1 @@
+savedcmd_/home/devtool/ipu6/ipu6-drivers/mei-vsc.mod := printf '%s\n'   drivers/misc/mei/spi-vsc.o drivers/misc/mei/hw-vsc.o | awk '!x[$$0]++ { print("/home/devtool/ipu6/ipu6-drivers/"$$0) }' > /home/devtool/ipu6/ipu6-drivers/mei-vsc.mod

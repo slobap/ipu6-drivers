@@ -1,0 +1,1 @@
+savedcmd_/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/modules.order := {   cat /home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/modules.order; :; } > /home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/modules.order

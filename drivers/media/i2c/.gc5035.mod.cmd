@@ -1,0 +1,1 @@
+savedcmd_/home/devtool/ipu6/ipu6-drivers/drivers/media/i2c/gc5035.mod := printf '%s\n'   gc5035.o | awk '!x[$$0]++ { print("/home/devtool/ipu6/ipu6-drivers/drivers/media/i2c/"$$0) }' > /home/devtool/ipu6/ipu6-drivers/drivers/media/i2c/gc5035.mod

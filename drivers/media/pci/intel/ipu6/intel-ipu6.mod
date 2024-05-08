@@ -1,0 +1,10 @@
+/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu.o
+/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-bus.o
+/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-dma.o
+/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-mmu.o
+/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-buttress.o
+/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-trace.o
+/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-cpd.o
+/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/ipu6.o
+/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-fw-com.o
+/home/devtool/ipu6/ipu6-drivers/drivers/media/pci/intel/ipu6/../cio2-bridge.o

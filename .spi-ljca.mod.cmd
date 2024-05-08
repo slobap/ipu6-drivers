@@ -1,0 +1,1 @@
+savedcmd_/home/devtool/ipu6/ipu6-drivers/spi-ljca.mod := printf '%s\n'   drivers/spi/spi-ljca.o | awk '!x[$$0]++ { print("/home/devtool/ipu6/ipu6-drivers/"$$0) }' > /home/devtool/ipu6/ipu6-drivers/spi-ljca.mod

@@ -1,0 +1,1 @@
+savedcmd_/home/devtool/ipu6/ipu6-drivers/drivers/media/i2c/hm2170.mod := printf '%s\n'   hm2170.o | awk '!x[$$0]++ { print("/home/devtool/ipu6/ipu6-drivers/drivers/media/i2c/"$$0) }' > /home/devtool/ipu6/ipu6-drivers/drivers/media/i2c/hm2170.mod

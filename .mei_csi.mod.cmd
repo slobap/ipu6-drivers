@@ -1,0 +1,1 @@
+savedcmd_/home/devtool/ipu6/ipu6-drivers/mei_csi.mod := printf '%s\n'   drivers/misc/ivsc/mei_csi.o | awk '!x[$$0]++ { print("/home/devtool/ipu6/ipu6-drivers/"$$0) }' > /home/devtool/ipu6/ipu6-drivers/mei_csi.mod

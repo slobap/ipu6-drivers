@@ -1,0 +1,1 @@
+savedcmd_/home/devtool/ipu6/ipu6-drivers/mei-vsc.ko := ld -r -m elf_x86_64 -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/devtool/ipu6/ipu6-drivers/mei-vsc.ko /home/devtool/ipu6/ipu6-drivers/mei-vsc.o /home/devtool/ipu6/ipu6-drivers/mei-vsc.mod.o;  make -f ./arch/x86/Makefile.postlink /home/devtool/ipu6/ipu6-drivers/mei-vsc.ko
