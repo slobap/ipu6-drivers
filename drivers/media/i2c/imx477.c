@@ -20,6 +20,7 @@
 #include <media/v4l2-event.h>
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-mediabus.h>
+#include <linux/acpi>
 
 static int dpc_enable = 1;
 module_param(dpc_enable, int, 0644);
@@ -2351,11 +2352,21 @@ static const struct dev_pm_ops imx477_pm_ops = {
 	SET_RUNTIME_PM_OPS(imx477_power_off, imx477_power_on, NULL)
 };
 
+#ifdef CONFIG_ACPI
+static const struct acpi_device_id imx477_acpi_ids[] = {
+	{"IMX477"},
+	{}
+};
+ 
+MODULE_DEVICE_TABLE(acpi, imx477_acpi_ids);
+#endif
+
 static struct i2c_driver imx477_i2c_driver = {
 	.driver = {
 		.name = "imx477",
 		.of_match_table	= imx477_dt_ids,
 		.pm = &imx477_pm_ops,
+		.acpi_match_table = ACPI_PTR(imx477_acpi_ids)
 	},
 	.probe_new = imx477_probe,
 	.remove = imx477_remove,
