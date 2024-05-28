@@ -2147,12 +2147,13 @@ static void imx477_free_controls(struct imx477 *imx477)
 
 static int imx477_check_hwcfg(struct device *dev)
 {
+/*
 	struct fwnode_handle *endpoint;
 	struct v4l2_fwnode_endpoint ep_cfg = {
 		.bus_type = V4L2_MBUS_CSI2_DPHY
-	};
+	};*/
 	int ret = -EINVAL;
-
+/*
 	endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(dev), NULL);
 	if (!endpoint) {
 		dev_err(dev, "endpoint node not found\n");
@@ -2164,13 +2165,13 @@ static int imx477_check_hwcfg(struct device *dev)
 		goto error_out;
 	}
 
-	/* Check the number of MIPI CSI2 data lanes */
+	// Check the number of MIPI CSI2 data lanes 
 	if (ep_cfg.bus.mipi_csi2.num_data_lanes != 2) {
 		dev_err(dev, "only 2 data lanes are currently supported\n");
 		goto error_out;
 	}
 
-	/* Check the link frequency set in device tree */
+	// Check the link frequency set in device tree 
 	if (!ep_cfg.nr_of_link_frequencies) {
 		dev_err(dev, "link-frequency property not found in DT\n");
 		goto error_out;
@@ -2182,13 +2183,13 @@ static int imx477_check_hwcfg(struct device *dev)
 			ep_cfg.link_frequencies[0]);
 		goto error_out;
 	}
-
+*/
 	ret = 0;
-
+/*
 error_out:
 	v4l2_fwnode_endpoint_free(&ep_cfg);
 	fwnode_handle_put(endpoint);
-
+*/
 	return ret;
 }
 
