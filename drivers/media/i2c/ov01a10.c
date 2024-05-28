@@ -10,7 +10,6 @@
 #include <linux/version.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
-
 #include <media/v4l2-fwnode.h>
 #if IS_ENABLED(CONFIG_INTEL_VSC)
 #include <linux/vsc.h>
@@ -18,9 +17,9 @@
 
 #define OV01A10_LINK_FREQ_400MHZ	400000000ULL
 #define OV01A10_SCLK			40000000LL
-#define OV01A10_MCLK			19200000 // Nekoristi se nigde u kodu!
+#define OV01A10_MCLK			19200000
 #define OV01A10_DATA_LANES		1
-#define OV01A10_RGB_DEPTH		10 // Nekoristi se nigde u kodu!
+#define OV01A10_RGB_DEPTH		10
 
 #define OV01A10_REG_CHIP_ID		0x300a
 #define OV01A10_CHIP_ID			0x560141
@@ -104,6 +103,9 @@ struct ov01a10_mode {
 };
 
 static const struct ov01a10_reg mipi_data_rate_720mbps[] = {
+};
+
+static const struct ov01a10_reg sensor_1280x800_setting[] = {
 	{0x0103, 0x01},
 	{0x0302, 0x00},
 	{0x0303, 0x06},
@@ -117,10 +119,6 @@ static const struct ov01a10_reg mipi_data_rate_720mbps[] = {
 	{0x0323, 0x06},
 	{0x0324, 0x01},
 	{0x0325, 0x68},
-};
-
-static const struct ov01a10_reg sensor_1280x800_setting[] = {
-	
 	{0x3002, 0xa1},
 	{0x301e, 0xf0},
 	{0x3022, 0x01},
@@ -550,7 +548,6 @@ static int ov01a10_init_controls(struct ov01a10 *ov01a10)
 	v4l2_ctrl_new_std(ctrl_hdlr, &ov01a10_ctrl_ops, V4L2_CID_DIGITAL_GAIN,
 			  OV01A10_DGTL_GAIN_MIN, OV01A10_DGTL_GAIN_MAX,
 			  OV01A10_DGTL_GAIN_STEP, OV01A10_DGTL_GAIN_DEFAULT);
-			  
 	exposure_max = cur_mode->vts_def - OV01A10_EXPOSURE_MAX_MARGIN;
 	ov01a10->exposure = v4l2_ctrl_new_std(ctrl_hdlr, &ov01a10_ctrl_ops,
 					      V4L2_CID_EXPOSURE,
