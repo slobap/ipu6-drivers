@@ -6,6 +6,8 @@
  * Based on Sony imx219 camera driver
  * Copyright (C) 2019-2020 Raspberry Pi (Trading) Ltd
  */
+
+#include <linux/acpi.h>
 #include <asm/unaligned.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -15,12 +17,15 @@
 #include <linux/of_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
+#include <linux/version.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-event.h>
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-mediabus.h>
-#include <linux/acpi>
+
+// Taken from the RPi include/uapi/linux/media-bus-format.h
+#define MEDIA_BUS_FMT_SENSOR_DATA               0x7002
 
 static int dpc_enable = 1;
 module_param(dpc_enable, int, 0644);
@@ -30,7 +35,6 @@ static int trigger_mode;
 module_param(trigger_mode, int, 0644);
 MODULE_PARM_DESC(trigger_mode, "Set vsync trigger mode: 1=source, 2=sink");
 
-#define MEDIA_BUS_FMT_SENSOR_DATA	0x7001
 #define IMX477_REG_VALUE_08BIT		1
 #define IMX477_REG_VALUE_16BIT		2
 
@@ -1106,12 +1110,11 @@ struct imx477 {
 	struct media_pad pad[NUM_PADS];
 
 	unsigned int fmt_code;
-	struct clk *img_clk;
+
 	struct clk *xclk;
 	u32 xclk_freq;
-	struct regulator *avdd;
 
-	struct gpio_desc *reset;
+	struct gpio_desc *reset_gpio;
 	struct regulator_bulk_data supplies[IMX477_NUM_SUPPLIES];
 
 	struct v4l2_ctrl_handler ctrl_handler;
@@ -1126,6 +1129,9 @@ struct imx477 {
 
 	/* Current mode */
 	const struct imx477_mode *mode;
+
+	/* Trigger mode */
+	int trigger_mode_of;
 
 	/*
 	 * Mutex for serialized access:
@@ -1146,33 +1152,6 @@ struct imx477 {
 	const struct imx477_compatible_data *compatible_data;
 };
 
-static int imx477_get_pm_resources(struct device *dev)
-{
-	struct v4l2_subdev *sd = dev_get_drvdata(dev);
-	struct imx477 *i477 = to_imx477(sd);
-	int ret;
-
-	i477->reset = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_LOW);
-	if (IS_ERR(i477->reset))
-		return dev_err_probe(dev, PTR_ERR(i477->reset),
-				     "failed to get reset gpio\n");
-
-	i477->img_clk = devm_clk_get_optional(dev, NULL);
-	if (IS_ERR(i477->img_clk))
-		return dev_err_probe(dev, PTR_ERR(i477->img_clk),
-				     "failed to get imaging clock\n");
-
-	i477->avdd = devm_regulator_get_optional(dev, "avdd");
-	if (IS_ERR(i477->avdd)) {
-		ret = PTR_ERR(i477->avdd);
-		i477->avdd = NULL;
-		if (ret != -ENODEV)
-			return dev_err_probe(dev, ret,
-					     "failed to get avdd regulator\n");
-	}
-
-	return 0;
-}
 static inline struct imx477 *to_imx477(struct v4l2_subdev *_sd)
 {
 	return container_of(_sd, struct imx477, sd);
@@ -1741,7 +1720,7 @@ static int imx477_start_streaming(struct imx477 *imx477)
 	struct i2c_client *client = v4l2_get_subdevdata(&imx477->sd);
 	const struct imx477_reg_list *reg_list;
 	const struct imx477_reg_list *extra_regs;
-	int ret;
+	int ret, tm;
 
 	if (!imx477->common_regs_written) {
 		ret = imx477_write_regs(imx477, mode_common_regs,
@@ -1778,14 +1757,15 @@ static int imx477_start_streaming(struct imx477 *imx477)
 		return ret;
 
 	/* Set vsync trigger mode: 0=standalone, 1=source, 2=sink */
+	tm = (imx477->trigger_mode_of >= 0) ? imx477->trigger_mode_of : trigger_mode;
 	imx477_write_reg(imx477, IMX477_REG_MC_MODE,
-			 IMX477_REG_VALUE_08BIT, (trigger_mode > 0) ? 1 : 0);
+			 IMX477_REG_VALUE_08BIT, (tm > 0) ? 1 : 0);
 	imx477_write_reg(imx477, IMX477_REG_MS_SEL,
-			 IMX477_REG_VALUE_08BIT, (trigger_mode <= 1) ? 1 : 0);
+			 IMX477_REG_VALUE_08BIT, (tm <= 1) ? 1 : 0);
 	imx477_write_reg(imx477, IMX477_REG_XVS_IO_CTRL,
-			 IMX477_REG_VALUE_08BIT, (trigger_mode == 1) ? 1 : 0);
+			 IMX477_REG_VALUE_08BIT, (tm == 1) ? 1 : 0);
 	imx477_write_reg(imx477, IMX477_REG_EXTOUT_EN,
-			 IMX477_REG_VALUE_08BIT, (trigger_mode == 1) ? 1 : 0);
+			 IMX477_REG_VALUE_08BIT, (tm == 1) ? 1 : 0);
 
 	/* set stream on register */
 	return imx477_write_reg(imx477, IMX477_REG_MODE_SELECT,
@@ -1892,27 +1872,18 @@ reg_off:
 	return ret;
 }
 
-// Treba proveriti !!!
 static int imx477_power_off(struct device *dev)
 {
-	//struct i2c_client *client = to_i2c_client(dev);
-	//struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct v4l2_subdev *sd = dev_get_drvdata(dev);
+	struct i2c_client *client = to_i2c_client(dev);
+	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct imx477 *imx477 = to_imx477(sd);
-/*
+
 	gpiod_set_value_cansleep(imx477->reset_gpio, 0);
 	regulator_bulk_disable(IMX477_NUM_SUPPLIES, imx477->supplies);
 	clk_disable_unprepare(imx477->xclk);
 
-	 Force reprogramming of the common registers when powered up again. */
-	//imx477->common_regs_written = false;
-	if (imx477->reset)
-		gpiod_set_value_cansleep(imx477->reset, 1);
-
-	if (imx477->avdd)
-		regulator_disable(imx477->avdd);
-
-	clk_disable_unprepare(imx477->img_clk);
+	/* Force reprogramming of the common registers when powered up again. */
+	imx477->common_regs_written = false;
 
 	return 0;
 }
@@ -2147,13 +2118,14 @@ static void imx477_free_controls(struct imx477 *imx477)
 
 static int imx477_check_hwcfg(struct device *dev)
 {
+int ret = -EINVAL;
 /*
 	struct fwnode_handle *endpoint;
 	struct v4l2_fwnode_endpoint ep_cfg = {
 		.bus_type = V4L2_MBUS_CSI2_DPHY
-	};*/
-	int ret = -EINVAL;
-/*
+	};
+	
+
 	endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(dev), NULL);
 	if (!endpoint) {
 		dev_err(dev, "endpoint node not found\n");
@@ -2221,12 +2193,34 @@ static const struct of_device_id imx477_dt_ids[] = {
 	{ /* sentinel */ }
 };
 
+static struct gpio_desc* imx477_get_gpio(struct imx477 *imx477,
+					  const char* name)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(&imx477->sd);
+
+	struct device *dev = &client->dev;
+	struct gpio_desc* gpio;
+	int ret;
+
+	gpio = devm_gpiod_get(dev, name, GPIOD_OUT_HIGH);
+	ret = PTR_ERR_OR_ZERO(gpio);
+	if (ret < 0) {
+		gpio = NULL;
+		dev_warn(dev, "failed to get %s gpio: %d\n", name, ret);
+	}
+
+	return gpio;
+}
+
 static int imx477_probe(struct i2c_client *client)
 {
 	struct device *dev = &client->dev;
 	struct imx477 *imx477;
 	const struct of_device_id *match;
 	int ret;
+	u32 tm_of;
+	
+	printk(KERN_ALERT "We are in imx477_probe function!");
 
 	imx477 = devm_kzalloc(&client->dev, sizeof(*imx477), GFP_KERNEL);
 	if (!imx477)
@@ -2234,6 +2228,13 @@ static int imx477_probe(struct i2c_client *client)
 
 	v4l2_i2c_subdev_init(&imx477->sd, client, &imx477_subdev_ops);
 
+#ifdef CONFIG_ACPI
+
+	imx477->compatible_data =
+		(const struct imx477_compatible_data *)&imx477_compatible;
+	imx477->trigger_mode_of = 1;
+
+#else
 	match = of_match_device(imx477_dt_ids, dev);
 	if (!match)
 		return -ENODEV;
@@ -2243,31 +2244,43 @@ static int imx477_probe(struct i2c_client *client)
 	/* Check the hardware configuration in device tree */
 	if (imx477_check_hwcfg(dev))
 		return -EINVAL;
+	printk(KERN_ALERT "imx477_check_hwcfg....OK");
+	/* Default the trigger mode from OF to -1, which means invalid */
+	ret = of_property_read_u32(dev->of_node, "trigger-mode", &tm_of);
+	imx477->trigger_mode_of = (ret == 0) ? tm_of : -1;
 
+#endif
+
+	printk(KERN_ALERT "v4l2_i2c_subdev_init....OK");
 	/* Get system clock (xclk) */
 	imx477->xclk = devm_clk_get(dev, NULL);
 	if (IS_ERR(imx477->xclk)) {
 		dev_err(dev, "failed to get xclk\n");
 		return PTR_ERR(imx477->xclk);
 	}
-
+	
 	imx477->xclk_freq = clk_get_rate(imx477->xclk);
 	if (imx477->xclk_freq != IMX477_XCLK_FREQ) {
 		dev_err(dev, "xclk frequency not supported: %d Hz\n",
 			imx477->xclk_freq);
 		return -EINVAL;
 	}
-
+	printk(KERN_ALERT "imx477_xclk....OK");
 	ret = imx477_get_regulators(imx477);
 	if (ret) {
 		dev_err(dev, "failed to get regulators\n");
 		return ret;
 	}
+	printk(KERN_ALERT "imx477_get_regulator....OK");
 
 	/* Request optional enable pin */
-	imx477->reset_gpio = devm_gpiod_get_optional(dev, "reset",
-						     GPIOD_OUT_HIGH);
-
+	imx477->reset_gpio = imx477_get_gpio(imx477, "reset");
+	if (!imx477->reset_gpio) {
+		printk(KERN_ALERT "devm_gpiod_get_optional....FAIL");
+		return -EINVAL;
+	}
+	
+	printk(KERN_ALERT "devm_gpiod_get_optional....OK");
 	/*
 	 * The sensor must be powered for imx477_identify_module()
 	 * to be able to read the CHIP_ID register
@@ -2275,11 +2288,11 @@ static int imx477_probe(struct i2c_client *client)
 	ret = imx477_power_on(dev);
 	if (ret)
 		return ret;
-
+	printk(KERN_ALERT "imx477_power_on....OK");
 	ret = imx477_identify_module(imx477, imx477->compatible_data->chip_id);
 	if (ret)
 		goto error_power_off;
-
+	printk(KERN_ALERT "imx477_identify_module....OK");
 	/* Initialize default format */
 	imx477_set_default_format(imx477);
 
@@ -2292,7 +2305,7 @@ static int imx477_probe(struct i2c_client *client)
 	ret = imx477_init_controls(imx477);
 	if (ret)
 		goto error_power_off;
-
+	printk(KERN_ALERT "imx477_init_control....OK");
 	/* Initialize subdev */
 	imx477->sd.internal_ops = &imx477_internal_ops;
 	imx477->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
@@ -2308,12 +2321,14 @@ static int imx477_probe(struct i2c_client *client)
 		dev_err(dev, "failed to init entity pads: %d\n", ret);
 		goto error_handler_free;
 	}
+	printk(KERN_ALERT "media_entity_pads_init....OK");
 
 	ret = v4l2_async_register_subdev_sensor(&imx477->sd);
 	if (ret < 0) {
 		dev_err(dev, "failed to register sensor sub-device: %d\n", ret);
 		goto error_media_entity;
 	}
+	printk(KERN_ALERT "v4l2_async_register_subdev_sensor....OK");
 
 	return 0;
 
@@ -2354,12 +2369,12 @@ static const struct dev_pm_ops imx477_pm_ops = {
 };
 
 #ifdef CONFIG_ACPI
-static const struct acpi_device_id imx477_acpi_ids[] = {
+static const struct acpi_device_id imx477_acpi_ids[]={
 	{"IMX477"},
 	{}
 };
- 
-MODULE_DEVICE_TABLE(acpi, imx477_acpi_ids);
+
+MODULE_DEVICE_TABLE(acpi,imx477_acpi_ids);
 #endif
 
 static struct i2c_driver imx477_i2c_driver = {
@@ -2367,9 +2382,14 @@ static struct i2c_driver imx477_i2c_driver = {
 		.name = "imx477",
 		.of_match_table	= imx477_dt_ids,
 		.pm = &imx477_pm_ops,
-		.acpi_match_table = ACPI_PTR(imx477_acpi_ids)
+		.acpi_match_table= ACPI_PTR(imx477_acpi_ids),
+		
 	},
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0)
 	.probe_new = imx477_probe,
+#else
+	.probe = imx477_probe,
+#endif
 	.remove = imx477_remove,
 };
 
