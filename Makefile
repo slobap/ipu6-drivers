@@ -50,6 +50,7 @@ export CONFIG_VIDEO_OV2740 = m
 export CONFIG_VIDEO_HM2170 = m
 export CONFIG_VIDEO_HM2172 = m
 export CONFIG_VIDEO_HI556 = m
+export CONFIG_VIDEO_IMX477 = m
 # export CONFIG_POWER_CTRL_LOGIC = m
 obj-y += drivers/media/i2c/
 
