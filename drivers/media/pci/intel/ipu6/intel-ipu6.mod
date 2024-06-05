@@ -1,0 +1,10 @@
+/home/user/Primer/repos/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu.o
+/home/user/Primer/repos/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-bus.o
+/home/user/Primer/repos/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-dma.o
+/home/user/Primer/repos/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-mmu.o
+/home/user/Primer/repos/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-buttress.o
+/home/user/Primer/repos/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-trace.o
+/home/user/Primer/repos/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-cpd.o
+/home/user/Primer/repos/ipu6-drivers/drivers/media/pci/intel/ipu6/ipu6.o
+/home/user/Primer/repos/ipu6-drivers/drivers/media/pci/intel/ipu6/../ipu-fw-com.o
+/home/user/Primer/repos/ipu6-drivers/drivers/media/pci/intel/ipu6/../cio2-bridge.o

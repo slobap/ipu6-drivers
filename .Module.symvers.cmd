@@ -1,0 +1,1 @@
+savedcmd_/home/user/Primer/repos/ipu6-drivers/Module.symvers :=  scripts/mod/modpost -m -a      -o /home/user/Primer/repos/ipu6-drivers/Module.symvers -T /home/user/Primer/repos/ipu6-drivers/modules.order -i Module.symvers -e 

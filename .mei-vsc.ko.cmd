@@ -1,0 +1,1 @@
+savedcmd_/home/user/Primer/repos/ipu6-drivers/mei-vsc.ko := ld -r -m elf_x86_64 -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/user/Primer/repos/ipu6-drivers/mei-vsc.ko /home/user/Primer/repos/ipu6-drivers/mei-vsc.o /home/user/Primer/repos/ipu6-drivers/mei-vsc.mod.o;  make -f ./arch/x86/Makefile.postlink /home/user/Primer/repos/ipu6-drivers/mei-vsc.ko

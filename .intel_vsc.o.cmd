@@ -1,0 +1,1 @@
+savedcmd_/home/user/Primer/repos/ipu6-drivers/intel_vsc.o := ld -m elf_x86_64 -z noexecstack   -r -o /home/user/Primer/repos/ipu6-drivers/intel_vsc.o @/home/user/Primer/repos/ipu6-drivers/intel_vsc.mod 
