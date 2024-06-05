@@ -1,0 +1,1 @@
+savedcmd_/home/user/Primer/repos/ipu6-drivers/intel_vsc.mod := printf '%s\n'   drivers/misc/ivsc/intel_vsc.o | awk '!x[$$0]++ { print("/home/user/Primer/repos/ipu6-drivers/"$$0) }' > /home/user/Primer/repos/ipu6-drivers/intel_vsc.mod

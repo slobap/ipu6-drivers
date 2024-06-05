@@ -1,0 +1,1 @@
+savedcmd_/home/user/Primer/repos/ipu6-drivers/mei_pse.mod := printf '%s\n'   drivers/misc/ivsc/mei_pse.o | awk '!x[$$0]++ { print("/home/user/Primer/repos/ipu6-drivers/"$$0) }' > /home/user/Primer/repos/ipu6-drivers/mei_pse.mod
